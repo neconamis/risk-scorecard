@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change Risk Score Card</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:1100px;margin:0 auto;padding:1rem;background:#f6f8fa;color:#24292f}
+  table{border-collapse:collapse;width:100%;background:#fff}
+  th,td{border:1px solid #d0d7de;padding:8px;font-size:14px;vertical-align:top;text-align:left}
+  th{background:#eaeef2}
+  td.opt{cursor:pointer}
+  td.opt:hover{background:#ddf4ff}
+  td.opt.sel{background:#54aeff;color:#000;font-weight:600}
+  td.cat{font-weight:600;white-space:nowrap}
+  #total{position:sticky;bottom:0;background:#fff;border:2px solid #d0d7de;padding:12px;margin-top:1rem;
+         display:flex;justify-content:space-between;align-items:center;font-size:20px}
+  #level{padding:4px 12px;border-radius:6px;font-weight:700;color:#fff;background:#6e7781}
+  button{padding:6px 14px;font-size:14px;cursor:pointer}
+  .scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<h1>Change Risk Score Card</h1>
+<p>Click one cell per category (the column header is its score). Totals update automatically.</p>
+<div class="scroll"><table id="card"></table></div>
+<div id="total">
+  <span>Total: <strong id="sum">0</strong> / 24 &nbsp;(<span id="count">0</span>/8 scored)</span>
+  <span id="level">—</span>
+  <button id="reset">Reset</button>
+</div>
+
+<script>
+const data = [
+["Change type","Doc-only, typo, formatting","Small bug fix, minor config","Feature, behavior change, dependency upgrade","Payments flow, PCI scope, auth, migration, partner contract"],
+["Blast radius","Single file, local logic","One service, limited users","Multiple services or clients","Cross-service, partner-facing, production-wide"],
+["Payments / PCI / auth / data impact","No sensitive data or production impact","Indirect sensitivity, low exposure","Touches customer data or auth-adjacent flow","Money movement, card data, PCI scope, auth logic, production data"],
+["Complexity","Straightforward one-path change","Small conditional or refactor","Multiple branches, edge cases","State machine, concurrency, hard rollback, unclear behavior"],
+["Test coverage","Existing tests already cover it fully","Small test update only","New tests needed for main path","Missing coverage for critical paths or failures"],
+["Rollback / deploy risk","Safe, reversible, no deploy concern","Simple deploy, easy revert","Needs coordination or feature flag","Hard/unsafe rollback, data cannot be easily undone"],
+["Observability","No new monitoring needed","Minor log/update only","Some metric/log changes needed","Production risk without logs, metrics, alerting, or runbook"],
+["Reviewer depth needed","Standard reviewer only","One domain reviewer helpful","Domain + platform/security review needed","Multiple expert reviewers required, high-stakes approval"]
+];
+const bands = [[6,"Low","#2da44e"],[12,"Medium","#bf8700"],[18,"High","#d1242f"],[24,"Critical","#82071e"]];
+const scores = Array(data.length).fill(null);
+const table = document.getElementById("card");
+table.innerHTML = "<tr><th>Category</th><th>0</th><th>1</th><th>2</th><th>3</th></tr>";
+data.forEach((row,r)=>{
+  const tr = table.insertRow();
+  tr.insertCell().outerHTML = `<td class="cat">${row[0]}</td>`;
+  for(let s=0;s<4;s++){
+    const td = tr.insertCell();
+    td.className="opt"; td.textContent=row[s+1];
+    td.onclick=()=>{ scores[r]=s; render(); };
+  }
+});
+function render(){
+  [...table.rows].slice(1).forEach((tr,r)=>{
+    [...tr.cells].slice(1).forEach((td,s)=>td.classList.toggle("sel",scores[r]===s));
+  });
+  const sum = scores.reduce((a,b)=>a+(b||0),0);
+  document.getElementById("sum").textContent = sum;
+  document.getElementById("count").textContent = scores.filter(x=>x!==null).length;
+  const lv = document.getElementById("level");
+  const b = bands.find(b=>sum<=b[0]);
+  lv.textContent = b[1]; lv.style.background = b[2];
+}
+document.getElementById("reset").onclick=()=>{scores.fill(null);render();};
+render();
+</script>
+</body>
+</html>
